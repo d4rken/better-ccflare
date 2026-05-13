@@ -30,6 +30,9 @@ The `--no-ff` flag creates a merge commit even if the branch could be fast-forwa
 
 After merging, update the Acknowledgements section in README.md to thank the contributor for their specific contributions.
 
+## Fork Workflow
+This repo is a fork of `tombii/better-ccflare`. When fixing bugs or making changes that should also be contributed upstream, follow `.claude/rules/fork-workflow.md`. It covers the two lanes (`fix/*` for upstream-bound, `fork/*` for fork-only), the `--no-ff` merge pattern, and how to reconcile local history after upstream lands or rejects a PR.
+
 ## Issue Management
 - Never close issues automatically
 - Wait for the issue reporter to confirm that fixes work for them before closing
