@@ -1,6 +1,6 @@
 import { NO_ACCOUNT_ID, type RecentErrorGroup } from "@better-ccflare/types";
 import { useState } from "react";
-import { useStats } from "../../../hooks/queries";
+import { useAccounts, useStats } from "../../../hooks/queries";
 import {
 	Select,
 	SelectContent,
@@ -23,6 +23,7 @@ const WINDOW_OPTIONS: Array<{ value: ErrorWindowKey; label: string }> = [
 export function RecentErrorsCard() {
 	const { windowKey, setWindowKey, windowHours } = useErrorWindow();
 	const { data, isLoading } = useStats(undefined, windowHours);
+	const { data: accounts } = useAccounts();
 	const { dismiss, isDismissed } = useDismissedErrors();
 	const [selectedError, setSelectedError] = useState<RecentErrorGroup | null>(
 		null,
@@ -30,6 +31,9 @@ export function RecentErrorsCard() {
 
 	const recentErrors = data?.recentErrors;
 	const visibleErrors = recentErrors?.filter((err) => !isDismissed(err)) ?? [];
+
+	const otherAccountsAvailable = (errorAccountId: string | null) =>
+		(accounts ?? []).some((a) => a.id !== errorAccountId && !a.paused);
 
 	if (isLoading && !data) return null;
 	if (visibleErrors.length === 0) return null;
@@ -62,6 +66,7 @@ export function RecentErrorsCard() {
 					<RecentErrorRow
 						key={`${error.accountId ?? NO_ACCOUNT_ID}:${error.errorCode}:${error.latestRequestId}`}
 						error={error}
+						otherAccountsAvailable={otherAccountsAvailable(error.accountId)}
 						onClick={() => setSelectedError(error)}
 						onDismiss={() => dismiss(error)}
 					/>
@@ -70,6 +75,11 @@ export function RecentErrorsCard() {
 
 			<ErrorDetailsModal
 				error={selectedError}
+				otherAccountsAvailable={
+					selectedError
+						? otherAccountsAvailable(selectedError.accountId)
+						: false
+				}
 				onClose={() => setSelectedError(null)}
 				onDismiss={(group) => dismiss(group)}
 			/>
