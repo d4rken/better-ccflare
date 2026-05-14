@@ -3,6 +3,7 @@ node_modules/
 .env.local
 .claude/settings.json
 .claude/settings.local.json
+.claude/worktrees/
 .planning/
 .codex
 ccflare.db
