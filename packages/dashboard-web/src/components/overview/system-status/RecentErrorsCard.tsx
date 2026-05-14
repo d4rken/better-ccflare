@@ -9,6 +9,7 @@ import {
 	SelectValue,
 } from "../../ui/select";
 import { ErrorDetailsModal } from "./ErrorDetailsModal";
+import { otherAccountsAvailable } from "./otherAccountsAvailable";
 import { RecentErrorRow } from "./RecentErrorRow";
 import { useDismissedErrors } from "./useDismissedErrors";
 import { type ErrorWindowKey, useErrorWindow } from "./useErrorWindow";
@@ -32,8 +33,8 @@ export function RecentErrorsCard() {
 	const recentErrors = data?.recentErrors;
 	const visibleErrors = recentErrors?.filter((err) => !isDismissed(err)) ?? [];
 
-	const otherAccountsAvailable = (errorAccountId: string | null) =>
-		(accounts ?? []).some((a) => a.id !== errorAccountId && !a.paused);
+	const hasOtherAvailableAccounts = (errorAccountId: string | null) =>
+		otherAccountsAvailable(accounts, errorAccountId);
 
 	if (isLoading && !data) return null;
 	if (visibleErrors.length === 0) return null;
@@ -66,7 +67,7 @@ export function RecentErrorsCard() {
 					<RecentErrorRow
 						key={`${error.accountId ?? NO_ACCOUNT_ID}:${error.errorCode}:${error.latestRequestId}`}
 						error={error}
-						otherAccountsAvailable={otherAccountsAvailable(error.accountId)}
+						otherAccountsAvailable={hasOtherAvailableAccounts(error.accountId)}
 						onClick={() => setSelectedError(error)}
 						onDismiss={() => dismiss(error)}
 					/>
@@ -77,7 +78,7 @@ export function RecentErrorsCard() {
 				error={selectedError}
 				otherAccountsAvailable={
 					selectedError
-						? otherAccountsAvailable(selectedError.accountId)
+						? hasOtherAvailableAccounts(selectedError.accountId)
 						: false
 				}
 				onClose={() => setSelectedError(null)}
