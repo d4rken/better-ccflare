@@ -30,8 +30,6 @@ function makeConfig() {
 		getCacheKeepaliveTtlMinutes: () => 0,
 		setCacheKeepaliveTtlMinutes: mock(() => {}),
 		setSystemPromptCacheTtl1h: mock(() => {}),
-		getDashboardAuthEnabled: () => true,
-		setDashboardAuthEnabled: mock(() => {}),
 	} as unknown as import("@better-ccflare/config").Config;
 }
 
@@ -47,7 +45,6 @@ describe("createConfigHandlers", () => {
 
 		expect(body.usage_throttling_five_hour_enabled).toBe(true);
 		expect(body.usage_throttling_weekly_enabled).toBe(true);
-		expect(body.dashboard_auth_enabled).toBe(true);
 	});
 
 	it("updates usage throttling windows from POST body", async () => {
