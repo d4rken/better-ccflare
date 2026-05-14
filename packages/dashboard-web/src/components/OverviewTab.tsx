@@ -20,6 +20,7 @@ export const OverviewTab = React.memo(() => {
 	// Fetch all data using React Query hooks
 	const { data: stats, isLoading: statsLoading } = useStats(
 		REFRESH_INTERVALS.default,
+		24,
 	);
 	const [timeRange, setTimeRange] = useState("24h");
 	const { data: analytics, isLoading: analyticsLoading } = useAnalytics(
@@ -246,7 +247,7 @@ export const OverviewTab = React.memo(() => {
 				loading={loading}
 			/>
 
-			<SystemStatus recentErrors={stats?.recentErrors} />
+			<SystemStatus />
 
 			{accounts && <RateLimitInfo accounts={accounts} />}
 		</div>
