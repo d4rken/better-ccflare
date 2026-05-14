@@ -22,7 +22,8 @@
 		"build:cli": "bun run --cwd apps/cli build",
 		"build:lander": "bun run --cwd apps/lander build",
 		"format": "bunx biome format --write .",
-		"lint": "bunx --bun biome check --write --unsafe ."
+		"lint": "bunx --bun biome check --write --unsafe .",
+		"restart": "./scripts/restart.sh"
 	},
 	"engines": {
 		"bun": ">=1.2.8"
