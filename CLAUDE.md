@@ -13,6 +13,10 @@ Load balancer proxy for Claude distributing requests across multiple account pro
 **NEVER TOUCH `inline-worker.ts`** — auto-generated, must be excluded from all reads, edits, searches, and commits.
 If accidentally modified: `git checkout -- packages/proxy/src/inline-worker.ts`
 
+## ⚠️ CRITICAL: Main Checkout Safety
+
+The directory `/home/darken/better-ccflare` is the **live systemd deployment** — the `better-ccflare.service` unit runs the proxy and rebuilds the dashboard from this working tree on every restart. **NEVER run destructive git commands here**: `git checkout <branch>`, `git switch`, `git reset --hard`, `git restore`, `git checkout .`, `git clean`, `git stash`, `git rebase`. They will silently change what gets deployed on the next reboot and may erase the user's uncommitted WIP. For any branch switch, PR review, or work on a different feature, **use a worktree** (`EnterWorktree` in Claude Code, or `git worktree add .claude/worktrees/<name>`). For read-only inspection of other branches, use `git show <ref>:<path>` and `git diff <ref>` — they never touch HEAD or the working tree. Full rule and recovery procedure: `.claude/rules/main-checkout-safety.md`.
+
 ## Git Refspecs
 This repo has both a `main` branch and a `main` tag. **Always use `refs/heads/main`** (not `main`) for all git log, diff, checkout, and merge-base commands to avoid ambiguous refspec errors. Applies to: `git log refs/heads/main`, `git diff refs/heads/main...`, `git merge-base refs/heads/main`, etc.
 

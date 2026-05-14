@@ -4,4 +4,5 @@ Project-specific rules Claude follows when working in this repo. Each file descr
 
 | Rule | When it applies |
 |------|-----------------|
+| [`main-checkout-safety.md`](main-checkout-safety.md) | **Always.** Forbids destructive git operations (`checkout`, `switch`, `reset --hard`, `restore`, `clean`, `stash`, etc.) inside `/home/darken/better-ccflare` because that directory is the live systemd deployment. Use worktrees instead. |
 | [`fork-workflow.md`](fork-workflow.md) | Any bug fix or change to fork code, with optional upstream PR to `tombii/better-ccflare`. Covers branch conventions, the `--no-ff` merge pattern, and post-upstream-merge reconciliation. |
