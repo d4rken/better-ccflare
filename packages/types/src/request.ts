@@ -118,6 +118,10 @@ export interface RequestPayload {
 		requestBodyTruncated?: boolean;
 		responseBodyTruncated?: boolean;
 		limitApplied?: number;
+		// True when the server (or client-side synthesis) returned this payload
+		// without request/response bodies. Consumers that need bodies must
+		// re-fetch via GET /api/requests/payload/:id.
+		bodiesOmitted?: boolean;
 	};
 }
 
