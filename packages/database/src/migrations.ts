@@ -272,7 +272,9 @@ export function runMigrations(db: Database, dbPath?: string): void {
 
 	const finalOAuthColumnNames = finalOAuthColumns.map((col) => col.name);
 
-	// Query remaining tables for column existence checks needed by willModifySchema
+	// Query remaining tables for the per-column ALTER TABLE checks below.
+	// (Backup gating, `willMutate`, only consults the accounts/oauth_sessions
+	// table info already read above; these reads feed the additive migrations.)
 	const requestsInfo = db
 		.prepare("PRAGMA table_info(requests)")
 		.all() as Array<{ name: string }>;
