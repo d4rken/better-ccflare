@@ -622,6 +622,10 @@ export default async function startServer(options?: {
 	container.registerInstance(SERVICE_KEYS.PricingLogger, pricingLogger);
 	setPricingLogger(pricingLogger);
 
+	// Strategy is constructed below after RuntimeConfig is built. The router
+	// accepts a getter so it can read the live (post-hot-reload) instance.
+	let currentStrategy: LoadBalancingStrategy | null = null;
+
 	const apiRouter = new APIRouter({
 		db,
 		config,
@@ -633,6 +637,7 @@ export default async function startServer(options?: {
 		getAsyncWriterHealth: () => asyncWriter.getHealth(),
 		getUsageWorkerHealth: () => getUsageWorkerHealth(),
 		getIntegrityStatus: () => dbOps.getIntegrityStatus(),
+		getStrategy: () => currentStrategy,
 	});
 
 	// Initialize AuthService for proxy authentication
@@ -779,6 +784,7 @@ export default async function startServer(options?: {
 	});
 
 	strategy.initialize?.(strategyStore);
+	currentStrategy = strategy;
 
 	// Start usage worker eagerly (before first request)
 	startUsageWorker();
@@ -861,6 +867,7 @@ export default async function startServer(options?: {
 			);
 			strategy.initialize?.(strategyStore);
 			proxyContext.strategy = strategy;
+			currentStrategy = strategy;
 		}
 		if (key === "store_payloads") {
 			sendWorkerConfigUpdate(config.getStorePayloads());

@@ -36,7 +36,11 @@ import {
 	getUsageThrottleStatus,
 	restartUsagePollingForAccount,
 } from "@better-ccflare/proxy";
-import type { FullUsageData, RateLimitReason } from "@better-ccflare/types";
+import type {
+	FullUsageData,
+	LoadBalancingStrategy,
+	RateLimitReason,
+} from "@better-ccflare/types";
 import { requiresSessionDurationTracking } from "@better-ccflare/types";
 import type { AccountResponse } from "../types";
 
@@ -147,11 +151,21 @@ async function getCachedOrPersistedCodexUsage(
 export function createAccountsListHandler(
 	dbOps: DatabaseOperations,
 	config: Config,
+	getStrategy?: () => LoadBalancingStrategy | null,
 ) {
 	return async (): Promise<Response> => {
 		const db = dbOps.getAdapter();
 		const now = Date.now();
 		const sessionDuration = 5 * 60 * 60 * 1000; // 5 hours
+
+		// Ask the active load-balancing strategy which account it would pick
+		// next. This reflects real routing intent — unlike last_used, which
+		// auto-refresh probes also bump. Strategy must be unavailable only
+		// in tests; in that case isPrimary is false on every row.
+		const strategy = getStrategy?.() ?? null;
+		const primaryId = strategy
+			? strategy.peek(await dbOps.getAllAccounts())
+			: null;
 
 		const accounts = await db.query<{
 			id: string;
@@ -503,6 +517,7 @@ export function createAccountsListHandler(
 					modelFallbacks,
 					billingType: account.billing_type,
 					sessionStats: sessionStatsMap.get(account.id) ?? null,
+					isPrimary: account.id === primaryId,
 				};
 			}),
 		);
