@@ -28,6 +28,8 @@ import {
 } from "@better-ccflare/load-balancer";
 import { Logger } from "@better-ccflare/logger";
 import {
+	CODEX_DEFAULT_ENDPOINT,
+	fetchCodexUsageOnDemand,
 	getProvider,
 	getRepresentativeUtilizationForProvider,
 	usageCache,
@@ -45,6 +47,7 @@ import {
 	getValidAccessToken,
 	handleProxy,
 	type ProxyContext,
+	registerCodexUsageRefresher,
 	registerPollingRestarter,
 	registerRefreshClearer,
 	sendWorkerConfigUpdate,
@@ -837,6 +840,104 @@ export default async function startServer(options?: {
 			config.getUsagePollIntervalMs(),
 		);
 		return true;
+	});
+
+	// Register this server's codex on-demand usage refresher. Codex does not
+	// expose a free usage endpoint (unlike Anthropic's /api/oauth/usage), so
+	// each call sends a tiny upstream request and parses the x-codex-* headers
+	// from the response. Cost is bounded by `max_output_tokens: 1` plus the
+	// abort-after-headers cancel inside fetchCodexUsageOnDemand.
+	registerCodexUsageRefresher(serverId, async (accountId: string) => {
+		const account = await dbOps.getAccount(accountId);
+		if (!account) {
+			return {
+				success: false,
+				message: `Account ${accountId} not found`,
+			};
+		}
+		if (account.provider !== "codex") {
+			return {
+				success: false,
+				message: `Account '${account.name}' is not a Codex account`,
+			};
+		}
+		if (!account.access_token && !account.refresh_token) {
+			return {
+				success: false,
+				message: `Account '${account.name}' has no tokens — please re-authenticate`,
+			};
+		}
+
+		let accessToken: string;
+		try {
+			accessToken = await getValidAccessToken(account, proxyContext);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			log.warn(
+				`Codex usage refresh: failed to get access token for ${account.name}: ${message}`,
+			);
+			return {
+				success: false,
+				message: `Could not refresh access token for '${account.name}': ${message}`,
+			};
+		}
+
+		const endpoint = account.custom_endpoint ?? CODEX_DEFAULT_ENDPOINT;
+
+		let fetchResult: Awaited<ReturnType<typeof fetchCodexUsageOnDemand>>;
+		try {
+			fetchResult = await fetchCodexUsageOnDemand(accessToken, endpoint);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			log.error(
+				`Codex usage refresh: upstream fetch failed for ${account.name}:`,
+				message,
+			);
+			return {
+				success: false,
+				message: `Codex request failed for '${account.name}': ${message}`,
+			};
+		}
+
+		// Persist rate-limit reset even on non-2xx so the dashboard sees the
+		// most accurate reset time when the account is currently limited.
+		const codexProvider = getProvider("codex");
+		if (codexProvider) {
+			const rl = codexProvider.parseRateLimit(fetchResult.response);
+			if (rl.resetTime != null) {
+				try {
+					await db.run(
+						"UPDATE accounts SET rate_limit_reset = ? WHERE id = ?",
+						[rl.resetTime, account.id],
+					);
+				} catch (error) {
+					log.warn(
+						`Codex usage refresh: failed to update rate_limit_reset for ${account.name}:`,
+						error,
+					);
+				}
+			}
+		}
+
+		if (!fetchResult.data) {
+			return {
+				success: false,
+				message: `Codex returned no usage headers (status ${fetchResult.response.status}) for '${account.name}'`,
+			};
+		}
+
+		usageCache.set(accountId, fetchResult.data);
+
+		const fiveHour = fetchResult.data.five_hour?.utilization ?? 0;
+		const sevenDay = fetchResult.data.seven_day?.utilization ?? 0;
+		log.info(
+			`Codex usage refreshed for '${account.name}': 5h=${fiveHour}%, 7d=${sevenDay}%`,
+		);
+
+		return {
+			success: true,
+			message: `Usage refreshed for '${account.name}' (5h: ${fiveHour}%, 7d: ${sevenDay}%).`,
+		};
 	});
 
 	// Initialize auto-refresh scheduler (now that proxyContext is available)

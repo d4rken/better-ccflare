@@ -376,7 +376,8 @@ export function AccountListItem({
 							<KeyRound className="h-4 w-4" />
 						</Button>
 					)}
-					{account.provider === "anthropic" && (
+					{(account.provider === "anthropic" ||
+						account.provider === "codex") && (
 						<Button
 							variant="ghost"
 							size="sm"
@@ -390,7 +391,11 @@ export function AccountListItem({
 									setIsRefreshingUsage(false);
 								}
 							}}
-							title="Refresh usage data (restarts usage polling and refreshes token if expired)"
+							title={
+								account.provider === "codex"
+									? "Refresh usage data (sends one minimal Codex request — consumes a small slice of quota)"
+									: "Refresh usage data (restarts usage polling and refreshes token if expired)"
+							}
 						>
 							<RefreshCw
 								className={`h-3.5 w-3.5 ${isRefreshingUsage ? "animate-spin" : ""}`}

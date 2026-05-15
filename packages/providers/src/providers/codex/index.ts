@@ -4,5 +4,12 @@ export {
 	pollCodexForToken,
 } from "./device-oauth";
 export { CodexOAuthProvider } from "./oauth";
-export { CodexProvider } from "./provider";
+export type { CodexUsageRefreshFetchResult } from "./on-demand-fetch";
+export { fetchCodexUsageOnDemand } from "./on-demand-fetch";
+export {
+	CODEX_DEFAULT_ENDPOINT,
+	CODEX_USER_AGENT,
+	CODEX_VERSION,
+	CodexProvider,
+} from "./provider";
 export { parseCodexUsageHeaders } from "./usage";
