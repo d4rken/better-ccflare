@@ -37,6 +37,7 @@ export {
 } from "./handlers";
 export {
 	runIntegrityCheckOnDemand,
+	startFullIntegrityCheckBackground,
 	startIntegrityScheduler,
 } from "./integrity-scheduler";
 export {
