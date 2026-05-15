@@ -109,13 +109,21 @@ export class SessionStrategy implements LoadBalancingStrategy {
 			isAccountAvailable(account, now);
 
 		// Mirror the auto-fallback path from select(), but without unpausing.
-		// A paused account is not returned as primary because peek must not
-		// mutate state — we report what *currently* would happen on a real
-		// request, not what would happen after auto-unpause side effects.
+		// When fallback would trigger, select() re-evaluates the priority queue
+		// and returns the highest-priority available account — chosenFallback
+		// only ends up first if it happens to outrank everyone else. Peek must
+		// match that, otherwise a lower-priority fallback candidate gets
+		// flagged Primary while a higher-priority non-fallback account is the
+		// one that would actually be picked.
 		const fallbackCandidates = this.checkForAutoFallbackAccounts(accounts, now);
-		for (const candidate of fallbackCandidates) {
-			if (candidate.paused) continue;
-			if (isAvailable(candidate)) return candidate.id;
+		const fallbackTriggered = fallbackCandidates.some(
+			(c) => !c.paused && isAvailable(c),
+		);
+		if (fallbackTriggered) {
+			const sorted = accounts
+				.filter((a) => isAvailable(a))
+				.sort((a, b) => a.priority - b.priority);
+			return sorted[0]?.id ?? null;
 		}
 
 		let activeAccount: Account | null = null;

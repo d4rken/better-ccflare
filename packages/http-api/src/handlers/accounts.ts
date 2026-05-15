@@ -38,6 +38,7 @@ import {
 	restartUsagePollingForAccount,
 } from "@better-ccflare/proxy";
 import type {
+	Account,
 	FullUsageData,
 	LoadBalancingStrategy,
 	RateLimitReason,
@@ -159,14 +160,7 @@ export function createAccountsListHandler(
 		const now = Date.now();
 		const sessionDuration = 5 * 60 * 60 * 1000; // 5 hours
 
-		// Ask the active load-balancing strategy which account it would pick
-		// next. This reflects real routing intent — unlike last_used, which
-		// auto-refresh probes also bump. Strategy must be unavailable only
-		// in tests; in that case isPrimary is false on every row.
 		const strategy = getStrategy?.() ?? null;
-		const primaryId = strategy
-			? strategy.peek(await dbOps.getAllAccounts())
-			: null;
 
 		const accounts = await db.query<{
 			id: string;
@@ -252,6 +246,31 @@ export function createAccountsListHandler(
 			`,
 			[now, now, now, sessionDuration],
 		);
+
+		// Ask the active load-balancing strategy which account it would pick
+		// next from the same in-memory snapshot we use to build the response —
+		// querying again would open a race window where isPrimary could land
+		// on a row whose paused/rate-limited fields the same response shows
+		// as blocked. Only the fields peek reads are mapped here; the rest of
+		// the Account interface is unused at peek time.
+		const primaryId = strategy
+			? strategy.peek(
+					accounts.map(
+						(a) =>
+							({
+								id: a.id,
+								provider: a.provider ?? "",
+								paused: !!a.paused,
+								rate_limited_until: a.rate_limited_until
+									? Number(a.rate_limited_until)
+									: null,
+								session_start: a.session_start ? Number(a.session_start) : null,
+								priority: a.priority,
+								auto_fallback_enabled: !!a.auto_fallback_enabled,
+							}) as Account,
+					),
+				)
+			: null;
 
 		// Fetch session-window token stats only for providers with session-based limits
 		const sessionStatsMap = await dbOps
