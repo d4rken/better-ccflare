@@ -109,7 +109,6 @@ export interface RequestPayload {
 		retry?: number;
 		timestamp: number;
 		success?: boolean;
-		rateLimited?: boolean;
 		accountsAttempted?: number;
 		pending?: boolean;
 		path?: string;

@@ -149,9 +149,6 @@ export function RequestDetailsModal({
 							{summary?.costUsd && summary.costUsd > 0 && (
 								<Badge variant="default">{formatCost(summary.costUsd)}</Badge>
 							)}
-							{request.meta.rateLimited && (
-								<Badge variant="warning">Rate Limited</Badge>
-							)}
 						</div>
 						<div className="flex items-center gap-2">
 							<Label htmlFor="beautify-mode" className="text-sm">
