@@ -2,6 +2,7 @@ import { Logger } from "@better-ccflare/logger";
 import type { UsageData } from "../../usage-fetcher";
 import {
 	CODEX_DEFAULT_ENDPOINT,
+	CODEX_PING_MODEL,
 	CODEX_USER_AGENT,
 	CODEX_VERSION,
 } from "./provider";
@@ -48,7 +49,7 @@ export async function fetchCodexUsageOnDemand(
 	const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
 	const body = JSON.stringify({
-		model: "gpt-5-codex",
+		model: CODEX_PING_MODEL,
 		input: [
 			{
 				role: "user",

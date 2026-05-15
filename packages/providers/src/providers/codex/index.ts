@@ -8,6 +8,7 @@ export type { CodexUsageRefreshFetchResult } from "./on-demand-fetch";
 export { fetchCodexUsageOnDemand } from "./on-demand-fetch";
 export {
 	CODEX_DEFAULT_ENDPOINT,
+	CODEX_PING_MODEL,
 	CODEX_USER_AGENT,
 	CODEX_VERSION,
 	CodexProvider,
