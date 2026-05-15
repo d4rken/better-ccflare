@@ -35,7 +35,10 @@ export {
 	type TokenHealthStatus,
 	unregisterCodexUsageRefresher,
 } from "./handlers";
-export { startIntegrityScheduler } from "./integrity-scheduler";
+export {
+	runIntegrityCheckOnDemand,
+	startIntegrityScheduler,
+} from "./integrity-scheduler";
 export {
 	getUsageWorker,
 	getUsageWorkerHealth,
