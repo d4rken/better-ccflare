@@ -212,6 +212,7 @@ export interface AccountResponse {
 	modelFallbacks?: { [key: string]: string } | null;
 	billingType?: string | null;
 	sessionStats: SessionStats | null;
+	isPrimary: boolean; // True if this is the account the load balancer would pick next
 }
 
 // UI display type - used in CLI and web dashboard
@@ -435,6 +436,7 @@ export function toAccountResponse(account: Account): AccountResponse {
 		modelFallbacks,
 		billingType: account.billing_type,
 		sessionStats: null,
+		isPrimary: false,
 	};
 }
 

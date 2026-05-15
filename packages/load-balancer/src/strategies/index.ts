@@ -102,6 +102,64 @@ export class SessionStrategy implements LoadBalancingStrategy {
 		);
 	}
 
+	peek(accounts: Account[]): string | null {
+		const now = Date.now();
+
+		const isAvailable = (account: Account): boolean =>
+			isAccountAvailable(account, now);
+
+		// Mirror the auto-fallback path from select(), but without unpausing.
+		// A paused account is not returned as primary because peek must not
+		// mutate state — we report what *currently* would happen on a real
+		// request, not what would happen after auto-unpause side effects.
+		const fallbackCandidates = this.checkForAutoFallbackAccounts(accounts, now);
+		for (const candidate of fallbackCandidates) {
+			if (candidate.paused) continue;
+			if (isAvailable(candidate)) return candidate.id;
+		}
+
+		let activeAccount: Account | null = null;
+		let mostRecentSessionStart = 0;
+		for (const account of accounts) {
+			if (
+				this.hasActiveSession(account, now) &&
+				account.session_start &&
+				account.session_start > mostRecentSessionStart
+			) {
+				activeAccount = account;
+				mostRecentSessionStart = account.session_start;
+			}
+		}
+
+		if (activeAccount && isAvailable(activeAccount)) {
+			const higherPriorityAccount = accounts
+				.filter(
+					(a) =>
+						a.id !== activeAccount.id &&
+						isAvailable(a) &&
+						a.priority < activeAccount.priority,
+				)
+				.sort((a, b) => a.priority - b.priority)[0];
+
+			if (!higherPriorityAccount) {
+				return activeAccount.id;
+			}
+		}
+
+		const available = accounts
+			.filter((a) => isAvailable(a))
+			.sort((a, b) => {
+				if (a.priority !== b.priority) return a.priority - b.priority;
+				const utilA =
+					this.store?.getAccountUtilization?.(a.id, a.provider) ?? 0;
+				const utilB =
+					this.store?.getAccountUtilization?.(b.id, b.provider) ?? 0;
+				return utilA - utilB;
+			});
+
+		return available[0]?.id ?? null;
+	}
+
 	select(accounts: Account[], meta: RequestMeta): Account[] {
 		const now = Date.now();
 
