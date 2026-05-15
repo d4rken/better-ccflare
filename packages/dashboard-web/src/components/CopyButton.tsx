@@ -1,4 +1,4 @@
-import { Check, Copy, Loader2 } from "lucide-react";
+import { AlertCircle, Check, Copy, Loader2 } from "lucide-react";
 import { type ComponentProps, useRef, useState } from "react";
 import { copyText } from "../lib/clipboard";
 import { cn } from "../lib/utils";
@@ -48,10 +48,23 @@ export function CopyButton({
 }: CopyButtonProps) {
 	const [copied, setCopied] = useState(false);
 	const [loading, setLoading] = useState(false);
+	const [errored, setErrored] = useState(false);
 	const timeoutRef = useRef<number | null>(null);
 
+	const flashError = (err: unknown) => {
+		console.error("Copy failed", err);
+		setErrored(true);
+		if (timeoutRef.current) {
+			window.clearTimeout(timeoutRef.current);
+		}
+		timeoutRef.current = window.setTimeout(() => setErrored(false), 1500);
+	};
+
 	const finishCopy = (text: string) => {
-		if (!text) return;
+		if (!text) {
+			flashError(new Error("No value to copy"));
+			return;
+		}
 
 		copyText(text)
 			.then(() => {
@@ -61,7 +74,7 @@ export function CopyButton({
 				}
 				timeoutRef.current = window.setTimeout(() => setCopied(false), 1500);
 			})
-			.catch((err) => console.error("Failed to copy", err));
+			.catch((err) => flashError(err));
 	};
 
 	const handleCopy = () => {
@@ -70,7 +83,7 @@ export function CopyButton({
 			setLoading(true);
 			getValueAsync()
 				.then((text) => finishCopy(text))
-				.catch((err) => console.error("Failed to resolve value to copy", err))
+				.catch((err) => flashError(err))
 				.finally(() => setLoading(false));
 			return;
 		}
@@ -89,6 +102,10 @@ export function CopyButton({
 		>
 			{loading ? (
 				<Loader2 className="h-4 w-4 animate-spin" />
+			) : errored ? (
+				<span className="animate-pulse text-destructive" title="Copy failed">
+					<AlertCircle className="h-4 w-4" />
+				</span>
 			) : copied ? (
 				<span className="animate-pulse">
 					<Check className="h-4 w-4" />
