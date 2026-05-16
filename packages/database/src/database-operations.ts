@@ -1071,16 +1071,6 @@ OAuth tokens will need to be re-authenticated.
 		await this.close();
 	}
 
-	/**
-	 * Path on disk to the resolved SQLite file, or `undefined` when running
-	 * in PostgreSQL mode (the path has no meaning there). Exposed so callers
-	 * outside the package can probe filesystem-level concerns (lock checks,
-	 * size, backup file siblings) without leaking the private field.
-	 */
-	getResolvedDbPath(): string | undefined {
-		return this.resolvedDbPath;
-	}
-
 	// Optimize database periodically to maintain performance (SQLite only)
 	optimize(): void {
 		if (this.sqliteDb) {
